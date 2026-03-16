@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Processing App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 60px 20px;
+            margin: 30px 0;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+            transform: scale(1.02);
+        }
+
+        .upload-area.dragover {
+            border-color: #28a745;
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.2), rgba(102, 126, 234, 0.2));
+        }
+
+        .upload-icon {
+            font-size: 4em;
+            color: #667eea;
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .upload-area:hover .upload-icon {
+            transform: scale(1.1);
+        }
+
+        .upload-text {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .upload-subtext {
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        #imageInput {
+            display: none;
+        }
+
+        .file-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            display: none;
+            border-left: 4px solid #667eea;
+        }
+
+        .file-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .file-size {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .preview-container {
+            margin: 20px 0;
+            display: none;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .loading {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .success {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border-left: 4px solid #155724;
+        }
+
+        .error {
+            background: linear-gradient(135deg, #dc3545, #fd7e14);
+            color: white;
+            border-left: 4px solid #721c24;
+        }
+
+        .progress {
+            width: 100%;
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .config-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .config-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .config-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .config-item:last-child {
+            border-bottom: none;
+        }
+
+        .config-label {
+            color: #666;
+        }
+
+        .config-value {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .loading-step {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖼️ Image Processor</h1>
+        
+        <div class="config-section">
+            <div class="config-title">Processing Configuration</div>
+            <div class="config-item">
+                <span class="config-label">Source Bucket:</span>
+                <span class="config-value">image-processing-9987</span>
+            </div>
+            <div class="config-item">
+                <span class="config-label">Resize Dimensions:</span>
+                <span class="config-value">800x600 pixels</span>
+            </div>
+            <div class="config-item">
+                <span class="config-label">Output Quality:</span>
+                <span class="config-value">85%</span>
+            </div>
+            <div class="config-item">
+                <span class="config-label">Supported Formats:</span>
+                <span class="config-value">JPG, PNG, GIF, BMP, WEBP</span>
+            </div>
+        </div>
+
+        <div class="upload-area" onclick="document.getElementById('imageInput').click()">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">Click to select an image or drag & drop</div>
+            <div class="upload-subtext">Supports JPG, PNG, GIF, BMP, WEBP files</div>
+        </div>
+
+        <input type="file" id="imageInput" accept="image/*" />
+
+        <div class="file-info" id="fileInfo">
+            <div class="file-name" id="fileName"></div>
+            <div class="file-size" id="fileSize"></div>
+        </div>
+
+        <div class="preview-container" id="previewContainer">
+            <img class="preview-image" id="previewImage" alt="Image preview" />
+        </div>
+
+        <div class="progress" id="progressBar">
+            <div class="progress-bar" id="progressBarFill"></div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div>
+                <span id="loadingText">Processing...</span>
+                <div class="loading-step" id="loadingStep"></div>
+            </div>
+        </div>
+
+        <button class="btn" id="processBtn" onclick="processImage()" disabled>
+            <span>📤</span>
+            Upload & Process Image
+        </button>
+
+        <button class="btn" onclick="resetForm()" style="background: linear-gradient(135deg, #6c757d, #495057);">
+            <span>🔄</span>
+            Reset
+        </button>
+
+        <div class="message success" id="successMessage"></div>
+        <div class="message error" id="errorMessage"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://e92fl3vfni.execute-api.us-east-1.amazonaws.com/proj2';
+        const S3_BUCKET = 'image-processing-9987';
+        
+        let selectedFile = null;
+        let uploadedFileName = null;
+        let imageMetadata = null;
+
+        // File input change handler
+        document.getElementById('imageInput').addEventListener('change', handleFileSelect);
+
+        // Drag and drop handlers
+        const uploadArea = document.querySelector('.upload-area');
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
+        uploadArea.addEventListener('drop', handleDrop);
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                processFileSelection(file);
+            }
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            uploadArea.classList.add('dragover');
+        }
+
+        function handleDragLeave(event) {
+            event.preventDefault();
+            uploadArea.classList.remove('dragover');
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.type.startsWith('image/')) {
+                    processFileSelection(file);
+                } else {
+                    showError('Please select a valid image file.');
+                }
+            }
+        }
+
+        function processFileSelection(file) {
+            selectedFile = file;
+            
+            // Extract and store image metadata
+            extractImageMetadata(file);
+            
+            // Display file info
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = formatFileSize(file.size);
+            document.getElementById('fileInfo').style.display = 'block';
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('previewImage').src = e.target.result;
+                document.getElementById('previewContainer').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+            
+            // Enable process button
+            document.getElementById('processBtn').disabled = false;
+            
+            // Clear any previous messages
+            hideMessages();
+        }
+
+        function extractImageMetadata(file) {
+            // Create an image element to get dimensions
+            const img = new Image();
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                img.onload = function() {
+                    // Generate a unique ImageID based on timestamp and random number
+                    const imageId = Date.now() + Math.floor(Math.random() * 1000);
+                    
+                    imageMetadata = {
+                        ImageID: imageId,
+                        FileName: file.name,
+                        OriginalSize: file.size,
+                        type: file.type,
+                        Width: img.width,
+                        Height: img.height
+                    };
+                    
+                    console.log('Extracted metadata:', imageMetadata);
+                };
+                img.src = e.target.result;
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        async function processImage() {
+            if (!selectedFile) {
+                showError('Please select an image file first.');
+                return;
+            }
+
+            if (!imageMetadata) {
+                showError('Image metadata not ready. Please try again.');
+                return;
+            }
+
+            try {
+                // Show loading state
+                showLoading(true);
+                updateLoadingStep('Preparing upload...');
+                document.getElementById('processBtn').disabled = true;
+                hideMessages();
+
+                const filename = selectedFile.name;
+                showProgress(25);
+                
+                // Step 1: Upload image
+                updateLoadingStep('Uploading image...');
+                const imageApiUrl = `${API_BASE_URL}/${S3_BUCKET}/${encodeURIComponent(filename)}`;
+                
+                console.log('Making image upload API call to:', imageApiUrl);
+                console.log('File size:', selectedFile.size, 'bytes');
+                console.log('File type:', selectedFile.type);
+                
+                showProgress(50);
+                
+                const imageResponse = await fetch(imageApiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': selectedFile.type || 'application/octet-stream',
+                    },
+                    body: selectedFile  // Send raw binary file data
+                });
+
+                showProgress(65);
+
+                // Handle image upload response
+                const imageResponseText = await imageResponse.text();
+                console.log('Image upload response status:', imageResponse.status);
+                console.log('Image upload response:', imageResponseText);
+
+                if (!imageResponse.ok) {
+                    throw new Error(`Image upload failed with status: ${imageResponse.status} - ${imageResponseText}`);
+                }
+
+                // Step 2: Send metadata
+                updateLoadingStep('Sending image metadata...');
+                showProgress(80);
+
+                const metadataApiUrl = `${API_BASE_URL}/Image-metadata`;
+                
+                console.log('Making metadata API call to:', metadataApiUrl);
+                console.log('Metadata payload:', imageMetadata);
+
+                const metadataResponse = await fetch(metadataApiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(imageMetadata)
+                });
+
+                showProgress(95);
+
+                // Handle metadata response
+                const metadataResponseText = await metadataResponse.text();
+                console.log('Metadata response status:', metadataResponse.status);
+                console.log('Metadata response:', metadataResponseText);
+
+                showProgress(100);
+                updateLoadingStep('Processing complete!');
+
+                if (metadataResponse.ok) {
+                    let imageResult = { message: imageResponseText || 'Image uploaded successfully' };
+                    let metadataResult = { message: metadataResponseText || 'Metadata sent successfully' };
+                    
+                    // Try to parse responses as JSON if possible
+                    try {
+                        if (imageResponseText.trim().startsWith('{')) {
+                            imageResult = JSON.parse(imageResponseText);
+                        }
+                    } catch (e) {
+                        console.warn('Could not parse image response as JSON');
+                    }
+                    
+                    try {
+                        if (metadataResponseText.trim().startsWith('{')) {
+                            metadataResult = JSON.parse(metadataResponseText);
+                        }
+                    } catch (e) {
+                        console.warn('Could not parse metadata response as JSON');
+                    }
+                    
+                    showSuccess(`✅ Image processing completed!
+                    
+📷 Image: ${filename} (${formatFileSize(selectedFile.size)})
+🆔 ImageID: ${imageMetadata.ImageID}
+📊 Upload: ${imageResult.message || 'Success'}
+📋 Metadata: ${metadataResult.message || 'Success'}
+🎯 Check destination bucket for resized image: resized-${filename}`);
+                } else {
+                    console.log('Metadata error response:', metadataResponseText);
+                    showError(`⚠️ Image uploaded but metadata failed: ${metadataResponse.status} - ${metadataResponseText}`);
+                }
+
+            } catch (error) {
+                console.error('Error processing image:', error);
+                showError(`❌ Error: ${error.message}`);
+            } finally {
+                showLoading(false);
+                hideProgress();
+                document.getElementById('processBtn').disabled = false;
+            }
+        }
+
+        function updateLoadingStep(step) {
+            document.getElementById('loadingStep').textContent = step;
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'flex' : 'none';
+            if (!show) {
+                document.getElementById('loadingStep').textContent = '';
+            }
+        }
+
+        function showProgress(percentage) {
+            document.getElementById('progressBar').style.display = 'block';
+            document.getElementById('progressBarFill').style.width = percentage + '%';
+        }
+
+        function hideProgress() {
+            document.getElementById('progressBar').style.display = 'none';
+            document.getElementById('progressBarFill').style.width = '0%';
+        }
+
+        function showSuccess(message) {
+            const successEl = document.getElementById('successMessage');
+            successEl.innerHTML = message.replace(/\n/g, '<br>');
+            successEl.style.display = 'block';
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+        }
+
+        function hideMessages() {
+            document.getElementById('successMessage').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        function resetForm() {
+            selectedFile = null;
+            uploadedFileName = null;
+            imageMetadata = null;
+            
+            document.getElementById('imageInput').value = '';
+            document.getElementById('fileInfo').style.display = 'none';
+            document.getElementById('previewContainer').style.display = 'none';
+            document.getElementById('processBtn').disabled = true;
+            
+            hideMessages();
+            hideProgress();
+            showLoading(false);
+        }
+
+        // Auto-hide messages after 15 seconds
+        setInterval(() => {
+            const messages = document.querySelectorAll('.message');
+            messages.forEach(message => {
+                if (message.style.display === 'block') {
+                    setTimeout(() => {
+                        message.style.display = 'none';
+                    }, 15000);
+                }
+            });
+        }, 1000);
+    </script>
+</body>
+</html>
